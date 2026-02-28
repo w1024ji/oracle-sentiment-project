@@ -1,3 +1,24 @@
 venv
 venv/
 .venv/
+
+# 1. 가상 환경 (용량이 크고 각자의 환경이 다르므로 제외)
+venv/
+.env
+
+# 2. AWS 및 환경 설정 (보안상 절대 금지)
+.aws/
+credentials
+*.pem
+
+# 3. 로컬 데이터 파일 (S3에 올렸으니 로컬 파일은 용량만 차지함)
+*.csv
+*.json
+raw-data/
+
+# 4. 운영체제 및 에디터 설정
+.DS_Store
+.vscode/
+__pycache__/
+*.pyc
+
