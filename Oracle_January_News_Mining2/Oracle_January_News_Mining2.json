@@ -1,0 +1,40 @@
+{
+  "name" : "Oracle_January_News_Mining2",
+  "jobMode" : "SCRIPT",
+  "description" : "",
+  "role" : "arn:aws:iam::107721656423:role/wonji-glue-visual-etl",
+  "executionProperty" : {
+    "maxConcurrentRuns" : 1
+  },
+  "command" : {
+    "name" : "glueetl",
+    "scriptLocation" : "s3://aws-glue-assets-107721656423-us-east-1/scripts/Oracle_January_News_Mining2.py",
+    "pythonVersion" : "3"
+  },
+  "defaultArguments" : {
+    "--enable-metrics" : "true",
+    "--enable-spark-ui" : "true",
+    "--spark-event-logs-path" : "s3://aws-glue-assets-107721656423-us-east-1/sparkHistoryLogs/",
+    "--enable-job-insights" : "true",
+    "--additional-python-modules" : "warcio,beautifulsoup4",
+    "--enable-observability-metrics" : "true",
+    "--enable-glue-datacatalog" : "true",
+    "--job-bookmark-option" : "job-bookmark-disable",
+    "--job-language" : "python",
+    "--TempDir" : "s3://aws-glue-assets-107721656423-us-east-1/temporary/"
+  },
+  "maxRetries" : 0,
+  "allocatedCapacity" : 2,
+  "timeout" : 15,
+  "maxCapacity" : 2.0,
+  "glueVersion" : "5.0",
+  "numberOfWorkers" : 2,
+  "workerType" : "G.1X",
+  "executionClass" : "STANDARD",
+  "sourceControlDetails" : {
+    "provider" : "GITHUB",
+    "repository" : "oracle-sentiment-project",
+    "branch" : "main",
+    "folder" : "Oracle_January_News_Mining2"
+  }
+}
