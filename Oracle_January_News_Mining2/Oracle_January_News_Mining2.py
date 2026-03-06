@@ -7,61 +7,83 @@ from awsglue.context import GlueContext
 from warcio.archiveiterator import ArchiveIterator
 from bs4 import BeautifulSoup
 
-# 초기화
+# 1. 초기화
 sc = SparkContext()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 s3 = boto3.client('s3')
 
-MY_BUCKET = "oracle-project-wonji" 
+# --- 원지 님의 버킷 정보 ---
+MY_BUCKET = "oracle-sentiment-wonji-project" 
+DEST_PATH = f"s3://{MY_BUCKET}/silver/2026/01/"
 # --------------------------
 
-def run_mining():
+def run_silver_mining():
     input_bucket = "commoncrawl"
     prefix = "crawl-data/CC-NEWS/2026/01/"
     
-    # 안전하게 5개 파일만 먼저 테스트
-    list_objects = s3.list_objects_v2(Bucket=input_bucket, Prefix=prefix, MaxKeys=5)
+    # 1월 파일 목록 중 상위 10개 처리 (테스트 및 비용 최적화)
+    list_objects = s3.list_objects_v2(Bucket=input_bucket, Prefix=prefix, MaxKeys=10)
     
-    final_results = []
-    exclude_list = ["hindustantimes", "livemint", "economictimes", "tickerreport", "astrology"]
+    silver_results = []
+    
+    # [기술적 필터 1] 제외할 국가 도메인 및 언어 경로 (중국어 추가)
+    exclude_domains = [
+        ".de/", ".ro/", ".fr/", ".jp/", ".cn/", ".hk/", ".tw/",  # 도메인 확장자 차단
+        "/de-de/", "/ro-ro/", "/fr-fr/", "/zh-cn/", "/zh-tw/", "/zh-hk/" # 언어 경로 차단
+    ]
 
     for obj in list_objects.get('Contents', []):
         key = obj['Key']
-        print(f"Working on: {key}")
+        print(f"Reading from Common Crawl: {key}")
         
         try:
             resp = s3.get_object(Bucket=input_bucket, Key=key)
-            # 데이터를 한 번에 메모리에 올리지 않고 스트림으로 처리
             raw_data = resp['Body'].read()
+            
             with io.BytesIO(raw_data) as stream:
                 for record in ArchiveIterator(stream):
-                    if record.rec_type == 'response' and record.http_headers.get_statuscode() == "200":
+                    if record.rec_type == 'response':
+                        # [기술적 필터 2] HTTP 상태 코드가 200(정상)인 것만
+                        if record.http_headers.get_statuscode() != "200":
+                            continue
+                        
                         url = record.rec_headers.get_header('WARC-Target-URI').lower()
-                        if any(ex in url for ex in exclude_list): continue
                         
+                        # [기술적 필터 3] 비영어권 도메인 차단
+                        if any(dom in url for dom in exclude_domains):
+                            continue
+                        
+                        # [기술적 필터 4] HTML 내용 읽기 및 'oracle' 키워드 1차 확인
                         html = record.content_stream().read().decode('utf-8', 'ignore')
-                        if "oracle" not in html.lower(): continue
+                        if "oracle" not in html.lower():
+                            continue
                         
+                        # [기술적 필터 5] BeautifulSoup을 통한 순수 텍스트 추출
                         soup = BeautifulSoup(html, 'html.parser')
-                        title = soup.title.string if soup.title else "No Title"
-                        text = soup.get_text(separator=' ', strip=True)
+                        title = soup.title.string if (soup.title and soup.title.string) else "No Title"
+                        clean_text = soup.get_text(separator=' ', strip=True)
                         
-                        if ("Oracle" in str(title) or text.count("Oracle") >= 3) and len(text) > 1000:
-                            final_results.append({
+                        # 데이터가 유의미한 길이인 경우만 Silver로 채택
+                        if len(clean_text) > 800:
+                            silver_results.append({
                                 "url": url,
-                                "title": str(title),
-                                "content": text[:1000]
+                                "title": str(title).strip(),
+                                "content": clean_text[:3000],  # Silver 단계는 분석을 위해 넉넉히 저장
+                                "extracted_at": "2026-03-06"
                             })
+                            
         except Exception as e:
             print(f"Error processing {key}: {e}")
 
-    if final_results:
-        # 결과를 Spark 데이터프레임으로 변환
-        df = spark.createDataFrame(final_results)
-        # S3에 저장
-        output_path = f"s3://{MY_BUCKET}/project/oracle_news_jan/"
-        df.write.mode("overwrite").json(output_path)
-        print(f"Done! Saved {len(final_results)} articles.")
+    # 2. Silver 계층 저장 (JSON 형식)
+    if silver_results:
+        df = spark.createDataFrame(silver_results)
+        # overwrite 모드로 저장하여 이전 노이즈 데이터를 깔끔하게 대체합니다.
+        df.write.mode("overwrite").json(DEST_PATH)
+        print(f"✅ Silver Mining Done! Saved {len(silver_results)} candidate articles to {DEST_PATH}")
+    else:
+        print("❌ No matching articles found in these WARC files.")
 
-run_mining()
+# 실행
+run_silver_mining()
