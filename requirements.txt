@@ -1,0 +1,17 @@
+# --- 핵심 데이터 엔지니어링 & 파이핑 ---
+boto3             # AWS 서비스(S3, Glue, Lambda) 제어
+warcio            # Common Crawl(WARC) 파일 스트리밍 분석
+beautifulsoup4    # HTML 정밀 파싱 및 텍스트 추출
+
+# --- 데이터 처리 및 분석 ---
+pandas            # 추출 데이터 구조화 및 CSV 저장
+pyspark           # 로컬 스파크 테스트용 (Glue 환경과 동기화)
+
+# --- 금융 데이터 수집 ---
+yfinance          # Oracle(ORCL) 주가 데이터 수집
+
+# --- 자연어 처리 (NLP) ---
+textblob          # 뉴스 감성 분석 (Polarity 점수 계산)
+
+# --- 유틸리티 ---
+lxml              # BeautifulSoup의 고속 파싱 엔진 (선택 사항)
