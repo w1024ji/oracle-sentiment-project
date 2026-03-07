@@ -16,7 +16,7 @@ def refine_and_analyze():
     # exclude_keywords = ["warren buffett", "omaha", "berkshire", "buffett", "phk", "fiyat", "tahmini"]
     target_keywords = ["nyse", "nasdaq", "cloud", "database", "earnings", "openai", "stock", "share"]
 
-    print("🚀 Silver 데이터를 읽어 Gold로 정제 및 감성 분석 중...")
+    print("Silver 데이터를 읽어 Gold로 정제 및 감성 분석 중...")
 
     for obj in bucket.objects.filter(Prefix=silver_prefix):
         if obj.key.endswith('.json'):
