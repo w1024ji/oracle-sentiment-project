@@ -9,13 +9,6 @@ def refine_silver_to_gold():
     
     bucket = s3.Bucket(bucket_name)
     gold_data = []
-
-    exclude_keywords = [
-        "warren buffett", "omaha", "berkshire", "buffett",  # 워렌 버핏 관련 (Oracle of Omaha)
-        "orclon", "orclx", "mexc", "token", "crypto",      # 크립토/파생 토큰 관련
-        "jakarta", "indonesia", "turkey", "turkish",       # 특정 국가 뉴스
-        "phk", "fiyat", "tahmini", "karyawan"              # 외국어 전용 단어 (해고, 가격, 예측 등)
-    ]
     
     target_keywords = ["nyse", "nasdaq", "cloud", "database", "earnings", "quarterly", "openai", "stock", "share"]
 
@@ -33,37 +26,37 @@ def refine_silver_to_gold():
                 text = item.get('content', '').lower()
                 url = item.get('url', '').lower()
 
-                if "oracle" not in title or "omaha" in title or "buffett" in title:
-                    continue
+                oracle_count = text.count("oracle")
+                is_about_oracle = ("oracle" in title) or (oracle_count >= 6)
                 
-                if any(n in text or n in title or n in url for n in exclude_keywords):
-                    continue
+                is_buffett = "omaha" in title or "buffett" in title
                 
-                is_stock_news = ("orcl" in text) or any(k in text for k in target_keywords)
+                is_foreign = any(w in text for w in [" en ", " por ", " las ", " los "])
 
-                if is_stock_news:
-                    # 데이터 용량 최적화를 위해 본문은 2000자까지만 Gold로 승격
-                    item['content'] = item['content'][:2000]
-                    gold_data.append(item)
+                if is_about_oracle and not is_buffett and not is_foreign:
+                    # 주식 뉴스 증거가 하나라도 있으면 합격
+                    if any(k in text for k in target_keywords) or "orcl" in text:
+                        gold_data.append(item)
 
-    # 4. 최종 결과 저장 및 보고
+    # 최종 결과 저장 및 보고
     if gold_data:
         df = pd.DataFrame(gold_data)
-        # 엑셀에서 바로 열 수 있게 utf-8-sig로 저장
-        output_name = "oracle_gold_january_final.csv"
+        
+        before_count = len(df)
+        df = df.drop_duplicates(subset=['title'], keep='first')
+        after_count = len(df)
+        
+        print(f"중복된 기사 {before_count - after_count}개를 제거했습니다.")
+
+        output_name = "oracle_gold_january.csv"
         df.to_csv(output_name, index=False, encoding='utf-8-sig')
         
         print("-" * 50)
-        print(f"✨ 정제 완료! 총 {len(gold_data)}개의 진짜 Oracle 뉴스를 확보했습니다.")
-        print(f"📁 저장 파일: {output_name}")
-        print("-" * 50)
+        print(f"정제 완료! 총 {len(gold_data)}개의 진짜 Oracle 뉴스를 확보했습니다.")
+        print(f"저장 파일: {output_name}")
         
-        # 샘플 확인용 출력
-        print("\n📈 Gold 데이터 샘플 (상위 3개):")
-        for i, row in df.head(3).iterrows():
-            print(f"[{i+1}] {row['title']}")
     else:
-        print("❌ 필터링 결과 남은 데이터가 없습니다. 기준을 조금 완화해보세요.")
+        print("필터링 결과 남은 데이터가 없습니다. 기준을 조금 완화해보세요.")
 
 if __name__ == "__main__":
     refine_silver_to_gold()
