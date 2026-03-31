@@ -39,7 +39,13 @@ The pipeline is orchestrated via a standalone Apache Airflow instance hosted on 
 ```bash
 # Clone the repository and place the DAG file in the Airflow directory
 cp dags/oracle_daily_crawler.py ~/airflow/dags/
+
 ```
+
+<img width="1744" height="704" alt="image" src="https://github.com/user-attachments/assets/d89c1690-2eee-43fd-b75c-d9f0d49d0b68" />
+
+
+<img width="1741" height="534" alt="image" src="https://github.com/user-attachments/assets/ec00c127-aa9b-4231-b23d-5ed7f9148584" />
 
 
 
