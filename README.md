@@ -47,6 +47,7 @@ cp dags/oracle_daily_crawler.py ~/airflow/dags/
 
 <img width="1741" height="534" alt="image" src="https://github.com/user-attachments/assets/ec00c127-aa9b-4231-b23d-5ed7f9148584" />
 
+<img width="813" height="500" alt="image" src="https://github.com/user-attachments/assets/e74694bf-55b6-46f2-b866-3740b9481b58" />
 
 
 You can read posts about this project in my blog! It is in the repository of 'w1024ji.github.io'.
